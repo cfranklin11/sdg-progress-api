@@ -1,0 +1,39 @@
+service: sdg-progress
+
+provider:
+  name: google
+  stage: dev
+  runtime: python37
+  region: asia-east2
+  memorySize: 2048
+  timeout: "540s"
+  environment:
+    PYTHON_ENV: production
+  project: sdg-progress
+  # The GCF credentials can be a little tricky to set up. Luckily we've documented this for you here:
+  # https://serverless.com/framework/docs/providers/google/guide/credentials/
+  #
+  # the path to the credentials file needs to be absolute
+  credentials: ~/.gcloud/keyfile.json
+
+plugins:
+  - serverless-google-cloudfunctions
+
+# needs more granular excluding in production as only the serverless provider npm
+# package should be excluded (and not the whole node_modules directory)
+package:
+  exclude:
+    - ./**
+  include:
+    - ./src/**
+    - ./data/**
+    - package.json
+    - package-lock.json
+    - main.py
+    - requirements.txt
+
+functions:
+  first:
+    handler: http
+    events:
+      - http: path

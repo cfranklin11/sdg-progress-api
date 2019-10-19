@@ -55,6 +55,7 @@ def country_data(_request):
         .loc[(slice(None), 2018), :]
         .reset_index()
         .rename(columns=_clean_col_names)
+        .fillna("")
         .to_dict("records")
     )
 

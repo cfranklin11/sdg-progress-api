@@ -6,6 +6,8 @@ import numpy as np
 
 from .settings import BASE_DIR
 
+INDEX_COLS = ["code", "country", "year"]
+
 
 def _clean_col_names(col_name):
     cleaned_name = (
@@ -77,7 +79,7 @@ def country_budgets():
         .rename(columns=_clean_col_names)
         .reset_index()
         .rename(columns=lambda col: {"Time": "year"}.get(col) or col.lower())
-        .set_index(["code", "country", "year"])
+        .set_index(INDEX_COLS)
     )
 
 
@@ -103,7 +105,8 @@ def _unicef_data(filepath, value_label):
         .query('uncertainty == "Median"')
         # Years all have .5 added to them
         .assign(year=lambda df: df["year"].astype(int))
-        .set_index(["code", "country", "year"])
+        .set_index(INDEX_COLS)
+        .drop("uncertainty", axis=1)
     )
 
 
@@ -120,3 +123,24 @@ def u5_mortality():
         "data/health_well_being/child_mortality/U5MR_mortality_rate_2019-1.xlsx",
     )
     return _unicef_data(U5_MORT_FILEPATH, "u5_mortality_rate")
+
+
+def maternal_mortality():
+    MATERNAL_MORT_FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/health_well_being/maternal_mortality/maternal_mortality/countryresults_all.csv",
+    )
+    COL_NAME_MAP = {
+        "name": "country",
+        "iso": "code",
+        "value": "maternal_mortality_rate",
+    }
+    UNUSED_COLS = ["estimate", "rounded", "indicator"]
+
+    return (
+        pd.read_csv(MATERNAL_MORT_FILEPATH)
+        .query('estimate == "point estimate" & indicator == "mmr" & rounded == False')
+        .rename(columns=COL_NAME_MAP)
+        .drop(UNUSED_COLS, axis=1)
+        .set_index(INDEX_COLS)
+    )

@@ -83,3 +83,7 @@ def save_model():
     ml_pipeline.fit(X_train, y_train)
 
     joblib.dump(ml_pipeline, os.path.join(BASE_DIR, "src/ml_model.pkl"))
+
+
+def load_model():
+    return joblib.load(os.path.join(BASE_DIR, "src/ml_model.pkl"))

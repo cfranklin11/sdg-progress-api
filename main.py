@@ -3,7 +3,6 @@ import sys
 import json
 
 import pandas as pd
-from sklearn.externals import joblib
 
 
 BASE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)))
@@ -91,7 +90,7 @@ def sdg_predictions(request):
     param_data = {param: params[param] for param in REQUIRED_PARAMS}
 
     X_test = pd.DataFrame([{**default_data, **DEFAULT_PARAMS, **param_data}])
-    model = joblib.load(os.path.join(BASE_DIR, "src/ml_model.pkl"))
+    model = ml_model.load_model()
     y_pred = model.predict(X_test)
 
     predictions = (

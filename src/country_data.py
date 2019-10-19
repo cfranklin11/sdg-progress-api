@@ -182,6 +182,11 @@ def modern_contraceptive_use_rate():
         # some duplicates reduces it to 53, but we'll just drop duplicates for now
         .drop_duplicates(subset=INDEX_COLS, keep="first")
         .drop("age_group", axis=1)
+        .assign(
+            modern_contraceptive_rate=lambda df: pd.to_numeric(
+                df["modern_contraceptive_rate"], errors="coerce"
+            )
+        )
         .set_index(INDEX_COLS)
     )
 

@@ -147,11 +147,17 @@ def maternal_mortality():
     )
 
 
-def _join_cols(top_col, bottom_col):
-    if not any(bottom_col) or "Unnamed" in bottom_col:
-        return top_col.replace("\n", " ")
+def _join_cols(col_names):
+    filtered_col_names = [
+        col
+        for col in col_names
+        if any(col) and "Unnamed" not in col and "DRINKING WATER" not in col
+    ]
 
-    return ": ".join((top_col, bottom_col)).replace("\n", " ")
+    if len(set(filtered_col_names)) == 1:
+        return filtered_col_names[0].replace("\n", " ")
+
+    return ": ".join(filtered_col_names).replace("\n", " ")
 
 
 def modern_contraceptive_use_rate():
@@ -167,7 +173,7 @@ def modern_contraceptive_use_rate():
     }
 
     df = pd.read_excel(FILEPATH, sheet_name="By methods", header=[3, 4])
-    df.columns = [_join_cols(*col_pair) for col_pair in df.columns.values]
+    df.columns = [_join_cols(col_pair) for col_pair in df.columns.values]
 
     return (
         df.rename(columns=COL_MAP)
@@ -177,4 +183,60 @@ def modern_contraceptive_use_rate():
         .drop_duplicates(subset=INDEX_COLS, keep="first")
         .drop("age_group", axis=1)
         .set_index(INDEX_COLS)
+    )
+
+
+def adolescent_fertility_rate():
+    FILEPATH = os.path.join(
+        BASE_DIR, "data/health_well_being/family_planning/UNPD_WFD_2017_FERTILITY.xlsx"
+    )
+    COL_MAP = {
+        "Country or area": "country",
+        "YearStart": "year",
+        "AgeGroup": "age_group",
+        # Fertility rate is per 1,000:
+        # https://www.un.org/en/development/desa/population/publications/dataset/fertility/total-fertility.asp
+        "DataValue": "adolescent_fertility_rate",
+    }
+
+    df = (
+        pd.read_excel(FILEPATH, sheet_name="FERTILITY_INDICATORS", header=2)
+        .rename(columns=COL_MAP)
+        .query('age_group == "[15-19]"')
+    )
+
+    # Some country/year combos don't have YearStart or YearEnd values,
+    # but they do have TimeMid values, so we'll use that
+    years = df["year"].fillna(df["TimeMid"].round())
+
+    return (
+        df.assign(year=years)
+        .set_index(INDEX_COLS)
+        .loc[:, ["adolescent_fertility_rate"]]
+    )
+
+
+def safe_drinking_water():
+    FILEPATH = os.path.join(BASE_DIR, "data/water_sanitation/JMP_2019_WLD.xlsx")
+    COL_MAP = {
+        "COUNTRY, AREA OR TERRITORY": "country",
+        "NATIONAL: Proportion of population using  improved water supplies: Safely managed": "safely_managed_water_use_rate",  # pylint: disable=line-too-long
+        "Year": "year",
+    }
+
+    drink_water_df = pd.read_excel(FILEPATH, sheet_name="Water", header=[0, 1, 2])
+
+    drink_water_df.columns = [
+        _join_cols(cols) for cols in drink_water_df.columns.values
+    ]
+    drink_water_df = drink_water_df.loc[:, ~drink_water_df.columns.duplicated()]
+
+    return pd.to_numeric(
+        drink_water_df.rename(columns=COL_MAP)
+        .set_index(["country", "year"])
+        .loc[:, "safely_managed_water_use_rate"]
+        .dropna()
+        .str.replace("<", "")
+        .str.replace(">", ""),
+        errors="coerce",
     )

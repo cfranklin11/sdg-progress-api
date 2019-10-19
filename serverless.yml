@@ -33,7 +33,7 @@ package:
     - requirements.txt
 
 functions:
-  first:
-    handler: http
+  country_budgets:
+    handler: country_budgets
     events:
       - http: path

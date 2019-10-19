@@ -1,0 +1,6 @@
+pandas==0.25.1
+numpy==1.17.3
+
+# Dev environment dependencies
+# jupyter==1.0.0
+# ipython==6.2.1

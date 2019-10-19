@@ -81,30 +81,42 @@ def country_budgets():
     )
 
 
+def _unicef_data(filepath, value_label):
+    UNICEF_COL_MAP = {
+        "ISO Code": "code",
+        "Country Name": "country",
+        "variable": "year",
+        "Uncertainty bounds*": "uncertainty",
+    }
+    UNICEF_ID_COLS = ["ISO Code", "Country Name", "Uncertainty bounds*"]
+    UNICEF_SHEET = "Country estimates"
+    UNICEF_HEADER_IDX = 11
+    UNICEF_YEAR_RANGE = (1950.5, 2019)
+
+    return (
+        pd.read_excel(filepath, sheet_name=UNICEF_SHEET, header=UNICEF_HEADER_IDX)
+        .melt(id_vars=UNICEF_ID_COLS, value_vars=np.arange(*UNICEF_YEAR_RANGE))
+        .dropna(subset=UNICEF_ID_COLS)
+        .rename(columns={**UNICEF_COL_MAP, **{"value": value_label}})
+        # Using 'Median' uncertainty across the board, because might as well hew
+        # to the middle-ground
+        .query('uncertainty == "Median"')
+        # Years all have .5 added to them
+        .assign(year=lambda df: df["year"].astype(int))
+        .set_index(["code", "country", "year"])
+    )
+
+
 def neonatal_mortality():
     NN_MORT_FILEPATH = os.path.join(
         BASE_DIR, "data/health_well_being/child_mortality/NMR_mortality_rate_2019.xlsx"
     )
-    NN_MORT_COLS = {
-        "ISO Code": "code",
-        "Country Name": "country",
-        "variable": "year",
-        "value": "neonatal_mortality_rate",
-        "Uncertainty bounds*": "uncertainty",
-    }
+    return _unicef_data(NN_MORT_FILEPATH, "neonatal_mortality_rate")
 
-    unicef_id_vars = ["ISO Code", "Country Name", "Uncertainty bounds*"]
-    unicef_sheet = "Country estimates"
-    unicef_header_idx = 11
 
-    return (
-        pd.read_excel(
-            NN_MORT_FILEPATH, sheet_name=unicef_sheet, header=unicef_header_idx
-        )
-        .melt(id_vars=unicef_id_vars, value_vars=np.arange(1950.5, 2019))
-        .dropna(subset=unicef_id_vars)
-        .rename(columns=NN_MORT_COLS)
-        .query('uncertainty == "Median"')
-        .assign(year=lambda df: df["year"].astype(int))
-        .set_index(["code", "country", "year"])
+def u5_mortality():
+    U5_MORT_FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/health_well_being/child_mortality/U5MR_mortality_rate_2019-1.xlsx",
     )
+    return _unicef_data(U5_MORT_FILEPATH, "u5_mortality_rate")

@@ -79,3 +79,32 @@ def country_budgets():
         .rename(columns=lambda col: {"Time": "year"}.get(col) or col.lower())
         .set_index(["code", "country", "year"])
     )
+
+
+def neonatal_mortality():
+    NN_MORT_FILEPATH = os.path.join(
+        BASE_DIR, "data/health_well_being/child_mortality/NMR_mortality_rate_2019.xlsx"
+    )
+    NN_MORT_COLS = {
+        "ISO Code": "code",
+        "Country Name": "country",
+        "variable": "year",
+        "value": "neonatal_mortality_rate",
+        "Uncertainty bounds*": "uncertainty",
+    }
+
+    unicef_id_vars = ["ISO Code", "Country Name", "Uncertainty bounds*"]
+    unicef_sheet = "Country estimates"
+    unicef_header_idx = 11
+
+    return (
+        pd.read_excel(
+            NN_MORT_FILEPATH, sheet_name=unicef_sheet, header=unicef_header_idx
+        )
+        .melt(id_vars=unicef_id_vars, value_vars=np.arange(1950.5, 2019))
+        .dropna(subset=unicef_id_vars)
+        .rename(columns=NN_MORT_COLS)
+        .query('uncertainty == "Median"')
+        .assign(year=lambda df: df["year"].astype(int))
+        .set_index(["code", "country", "year"])
+    )

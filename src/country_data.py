@@ -6,7 +6,7 @@ import numpy as np
 
 from .settings import BASE_DIR
 
-INDEX_COLS = ["code", "country", "year"]
+INDEX_COLS = ["country", "year"]
 
 
 def _clean_col_names(col_name):
@@ -94,6 +94,7 @@ def _unicef_data(filepath, value_label):
     UNICEF_SHEET = "Country estimates"
     UNICEF_HEADER_IDX = 11
     UNICEF_YEAR_RANGE = (1950.5, 2019)
+    UNUSED_COLS = ["uncertainty", "code"]
 
     return (
         pd.read_excel(filepath, sheet_name=UNICEF_SHEET, header=UNICEF_HEADER_IDX)
@@ -106,7 +107,7 @@ def _unicef_data(filepath, value_label):
         # Years all have .5 added to them
         .assign(year=lambda df: df["year"].astype(int))
         .set_index(INDEX_COLS)
-        .drop("uncertainty", axis=1)
+        .drop(UNUSED_COLS, axis=1)
     )
 
 
@@ -135,12 +136,45 @@ def maternal_mortality():
         "iso": "code",
         "value": "maternal_mortality_rate",
     }
-    UNUSED_COLS = ["estimate", "rounded", "indicator"]
+    UNUSED_COLS = ["estimate", "rounded", "indicator", "code"]
 
     return (
         pd.read_csv(MATERNAL_MORT_FILEPATH)
         .query('estimate == "point estimate" & indicator == "mmr" & rounded == False')
         .rename(columns=COL_NAME_MAP)
         .drop(UNUSED_COLS, axis=1)
+        .set_index(INDEX_COLS)
+    )
+
+
+def _join_cols(top_col, bottom_col):
+    if not any(bottom_col) or "Unnamed" in bottom_col:
+        return top_col.replace("\n", " ")
+
+    return ": ".join((top_col, bottom_col)).replace("\n", " ")
+
+
+def modern_contraceptive_use_rate():
+    FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/health_well_being/family_planning/UNPD_WCU2019_Country_Data_Survey-Based.xlsx",
+    )
+    COL_MAP = {
+        "Country or area": "country",
+        "Survey start year": "year",
+        "Age group": "age_group",
+        "Contraceptive prevalence (per cent): Any modern method": "modern_contraceptive_rate",
+    }
+
+    df = pd.read_excel(FILEPATH, sheet_name="By methods", header=[3, 4])
+    df.columns = [_join_cols(*col_pair) for col_pair in df.columns.values]
+
+    return (
+        df.rename(columns=COL_MAP)
+        .loc[:, list(COL_MAP.values())]
+        # There are about 75 duplicates, using 'Survey end year' to fill
+        # some duplicates reduces it to 53, but we'll just drop duplicates for now
+        .drop_duplicates(subset=INDEX_COLS, keep="first")
+        .drop("age_group", axis=1)
         .set_index(INDEX_COLS)
     )

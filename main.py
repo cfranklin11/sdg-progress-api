@@ -72,17 +72,21 @@ def sdg_predictions(request):
         "social_protection_budget",
     ]
 
-    country = request.args["country"]  # pylint: disable=unused-variable
+    params = request.get_json()
+
+    country = params["country"]  # pylint: disable=unused-variable
 
     features, _ = ml_model.prepare_data(countries.load_combined())
     default_data = features.query("country == @country").iloc[-1, :].to_dict()
-    param_data = {param: request.args[param] for param in REQUIRED_PARAMS}
+    param_data = {param: params[param] for param in REQUIRED_PARAMS}
 
     X_test = pd.DataFrame([{**default_data, **DEFAULT_PARAMS, **param_data}])
     model = joblib.load(os.path.join(BASE_DIR, "src/ml_model.pkl"))
     y_pred = model.predict(X_test)
 
-    predictions = pd.DataFrame(y_pred, columns=ml_model.LABELS).to_dict("records")
+    predictions = (
+        pd.DataFrame(y_pred, columns=ml_model.LABELS).fillna("").to_dict("records")
+    )
 
     return {"data": predictions}
 

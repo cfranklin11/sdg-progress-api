@@ -18,6 +18,23 @@ LABELS = [
     "adolescent_fertility_rate",
     "safely_managed_water_use_rate",
 ]
+FEATURES = [
+    "country",
+    "year",
+    "defence_budget",
+    "economic_affairs_budget",
+    "education_budget",
+    "environment_protection_budget",
+    "general_public_services_budget",
+    "health_budget",
+    "housing_and_community_amenities_budget",
+    "public_order_and_safety_budget",
+    "recreation_culture_and_religion_budget",
+    "social_protection_budget",
+    "gross_debt",
+    "total_expenditure",
+    "total_revenue",
+]
 START_TEST_YEAR = 2017
 
 
@@ -27,7 +44,7 @@ def prepare_data(df):
     # and use a better imputation strategy
     prepared_df = df.fillna(0).reset_index().drop("code", axis=1)
 
-    features = prepared_df.drop(LABELS, axis=1)
+    features = prepared_df[FEATURES]
     labels = prepared_df[LABELS]
 
     return features, labels

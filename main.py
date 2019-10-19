@@ -9,7 +9,7 @@ if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
 
-from src import country_data
+from src.country_data import combined
 
 
 def _clean_col_names(col_name):
@@ -28,14 +28,21 @@ def _clean_col_names(col_name):
         "gross_debt": "totalDebt",
         "total_expenditure": "totalBudget",
         "total_revenue": "totalRevenue",
+        "neonatal_mortality_rate": "neonatalMortalityRate",
+        "u5_mortality_rate": "u5MortalityRate",
+        "maternal_mortality_rate": "maternalMortalityRate",
+        "modern_contraceptive_rate": "modernContraceptiveRate",
+        "adolescent_fertility_rate": "adolescentFertilityRate",
+        "safely_managed_water_use_rate": "safelyManagedWaterUseRate",
     }
 
     return JSON_NAMES_MAP.get(col_name) or col_name
 
 
-def country_budgets(_request):
+def country_data(_request):
     data = (
-        country_data.country_budgets.loc[(slice(None), slice(None), 2018), :]
+        combined()
+        .loc[(slice(None), 2018), :]
         .reset_index()
         .rename(columns=_clean_col_names)
         .to_dict("records")
@@ -45,4 +52,4 @@ def country_budgets(_request):
 
 
 if __name__ == "__main__":
-    country_budgets({})
+    country_data({})

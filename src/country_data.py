@@ -240,3 +240,26 @@ def safe_drinking_water():
         .str.replace(">", ""),
         errors="coerce",
     )
+
+
+def combined():
+    return (
+        country_budgets()
+        .join(
+            [
+                neonatal_mortality(),
+                u5_mortality(),
+                maternal_mortality(),
+                modern_contraceptive_use_rate(),
+                adolescent_fertility_rate(),
+                safe_drinking_water(),
+            ],
+            how="left",
+        )
+        .groupby("country")
+        # We forwardfill & backfill to make sure not to leave NaNs at the start
+        # of a country's data
+        .ffill()
+        .groupby("country")
+        .bfill()
+    )

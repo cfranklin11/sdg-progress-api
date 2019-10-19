@@ -1,5 +1,6 @@
 pandas==0.25.1
 numpy==1.17.3
+xlrd>=1.1.0
 
 # Dev environment dependencies
 # jupyter==1.0.0

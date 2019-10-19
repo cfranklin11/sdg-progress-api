@@ -1,5 +1,6 @@
 import os
 import re
+import json
 
 import pandas as pd
 import numpy as np
@@ -7,6 +8,7 @@ import numpy as np
 from .settings import BASE_DIR
 
 INDEX_COLS = ["country", "year"]
+CATEGORY_COLS = ["country", "code"]
 
 
 def _clean_col_names(col_name):
@@ -268,3 +270,28 @@ def combined():
         .groupby("country")
         .bfill()
     )
+
+
+def save_combined():
+    df = combined().reset_index()
+
+    with open(
+        os.path.join(BASE_DIR, "data/processed/processed_country_data.json"), "w"
+    ) as json_file:
+        json.dump(df.fillna("").to_dict("records"), json_file, indent=2)
+
+
+def load_combined():
+    with open(
+        os.path.join(BASE_DIR, "data/processed/processed_country_data.json"), "r"
+    ) as json_file:
+        data = json.load(json_file)
+
+    df = pd.DataFrame(data)
+    categories = df[CATEGORY_COLS]
+    numeric_cols = [
+        pd.to_numeric(df[col], errors="coerce")
+        for col in df.drop(CATEGORY_COLS, axis=1).columns
+    ]
+
+    return pd.concat([categories] + numeric_cols, axis=1).set_index(INDEX_COLS)

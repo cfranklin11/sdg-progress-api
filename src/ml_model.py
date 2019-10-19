@@ -58,7 +58,7 @@ def pipeline():
 
 
 def save_model():
-    df = country_data.combined()
+    df = country_data.load_combined()
     X, y = prepare_data(df)
 
     X_train, _X_test, y_train, _y_test = split_data(X, y)

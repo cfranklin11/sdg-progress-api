@@ -12,7 +12,7 @@ if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
 
-from src.country_data import combined
+from src import country_data as countries
 from src import ml_model
 
 
@@ -45,10 +45,11 @@ def _clean_col_names(col_name):
 
 def country_data(_request):
     data = (
-        combined()
+        countries.load_combined()
         .loc[(slice(None), 2018), :]
         .reset_index()
         .rename(columns=_clean_col_names)
+        .fillna("")
         .to_dict("records")
     )
 
@@ -73,7 +74,7 @@ def sdg_predictions(request):
 
     country = request.args["country"]  # pylint: disable=unused-variable
 
-    features, _ = ml_model.prepare_data(combined())
+    features, _ = ml_model.prepare_data(countries.load_combined())
     default_data = features.query("country == @country").iloc[-1, :].to_dict()
     param_data = {param: request.args[param] for param in REQUIRED_PARAMS}
 
@@ -101,4 +102,4 @@ if __name__ == "__main__":
         "social_protection_budget": 5515.92,
     }
 
-    sdg_predictions(test_params)
+    print(sdg_predictions(test_params))

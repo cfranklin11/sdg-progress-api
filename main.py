@@ -14,6 +14,16 @@ from src.country_data import combined
 
 def _clean_col_names(col_name):
     JSON_NAMES_MAP = {
+        "environment_protection_budget": "environmentProtection_budget",
+        "general_public_services_budget": "generalPublicServicesBudget",
+        "health_budget": "healthBudget",
+        "housing_and_community_amenities_budget": "housingAndCommunityAmenitiesBudget",
+        "public_order_and_safety_budget": "publicOrderAndSafetyBudget",
+        "recreation_culture_and_religion_budget": "recreationCultureAndReligionBudget",
+        "social_protection_budget": "socialProtectionBudget",
+        "education_budget": "educationBudget",
+        "economic_affairs_budget": "economicAffairsBudget",
+        "defence_budget": "defenceBudget",
         "code": "countryCode",
         "country": "country",
         "time": "year",

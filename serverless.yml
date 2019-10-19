@@ -37,3 +37,7 @@ functions:
     handler: country_data
     events:
       - http: path
+  sdg_predictions:
+    handler: sdg_predictions
+    events:
+      - http: path

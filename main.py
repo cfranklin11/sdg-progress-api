@@ -92,7 +92,7 @@ def sdg_predictions(request):
 
     predictions = pd.DataFrame(y_pred, columns=ml_model.LABELS).pipe(_prepare_response)
 
-    return {"data": predictions}
+    return json.dumps({"data": predictions})
 
 
 if __name__ == "__main__":

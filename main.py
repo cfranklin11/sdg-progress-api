@@ -15,6 +15,34 @@ from src import country_data as countries
 from src import ml_model
 
 
+def _reshape_data_for_frontend(datum):
+    base_data = {
+        "country": datum["country"],
+        "countryCode": datum["countryCode"],
+        "goals": {
+            "3": {
+                "3.1": {"maternalMortalityRate": datum["maternalMortalityRate"]},
+                "3.2": {
+                    "u5MortalityRate": datum["u5MortalityRate"],
+                    "neonatalMortalityRate": datum["neonatalMortalityRate"],
+                },
+                "3.7": {
+                    "modernContraceptiveRate": datum["modernContraceptiveRate"],
+                    "adolescentFertilityRate": datum["adolescentFertilityRate"],
+                },
+            },
+            "6": {"safelyManagedWaterUseRate": datum["safelyManagedWaterUseRate"]},
+        },
+    }
+
+    budgets = {key: value for key, value in datum.items() if "Budget" in key}
+
+    if not any(budgets):
+        return base_data
+
+    return {**base_data, **{"budgets": budgets}}
+
+
 def _clean_col_names(col_name):
     JSON_NAMES_MAP = {
         "code": "countryCode",
@@ -59,7 +87,9 @@ def country_data(_request):
         .pipe(_prepare_response)
     )
 
-    return json.dumps({"data": data})
+    frontend_data = [_reshape_data_for_frontend(datum) for datum in data]
+
+    return json.dumps({"data": frontend_data})
 
 
 def sdg_predictions(request):
@@ -91,8 +121,9 @@ def sdg_predictions(request):
     y_pred = model.predict(X_test)
 
     predictions = pd.DataFrame(y_pred, columns=ml_model.LABELS).pipe(_prepare_response)
+    frontend_data = [_reshape_data_for_frontend(datum) for datum in predictions]
 
-    return json.dumps({"data": predictions})
+    return json.dumps({"data": frontend_data})
 
 
 if __name__ == "__main__":

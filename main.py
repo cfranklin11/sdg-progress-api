@@ -17,7 +17,7 @@ from src import ml_model
 
 def _clean_col_names(col_name):
     JSON_NAMES_MAP = {
-        "environment_protection_budget": "environmentProtection_budget",
+        "environment_protection_budget": "environmentProtectionBudget",
         "general_public_services_budget": "generalPublicServicesBudget",
         "health_budget": "healthBudget",
         "housing_and_community_amenities_budget": "housingAndCommunityAmenitiesBudget",

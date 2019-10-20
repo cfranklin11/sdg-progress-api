@@ -4,7 +4,7 @@ from sklearn.linear_model import ElasticNet
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.externals import joblib
+import joblib
 
 from src import country_data
 from src.settings import BASE_DIR

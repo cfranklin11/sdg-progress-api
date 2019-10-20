@@ -81,7 +81,10 @@ def country_budgets():
         .rename(columns=_clean_col_names)
         .reset_index()
         .rename(columns=lambda col: {"Time": "year"}.get(col) or col.lower())
-        .set_index(INDEX_COLS)
+        .set_index(INDEX_COLS + ["code"])
+        .groupby(INDEX_COLS + ["code"])
+        .mean()
+        .reset_index(level=2)
     )
 
 
@@ -110,6 +113,8 @@ def _unicef_data(filepath, value_label):
         .assign(year=lambda df: df["year"].astype(int))
         .set_index(INDEX_COLS)
         .drop(UNUSED_COLS, axis=1)
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -146,6 +151,8 @@ def maternal_mortality():
         .rename(columns=COL_NAME_MAP)
         .drop(UNUSED_COLS, axis=1)
         .set_index(INDEX_COLS)
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -190,6 +197,8 @@ def modern_contraceptive_use_rate():
             )
         )
         .set_index(INDEX_COLS)
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -220,6 +229,8 @@ def adolescent_fertility_rate():
         df.assign(year=years)
         .set_index(INDEX_COLS)
         .loc[:, ["adolescent_fertility_rate"]]
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -238,14 +249,18 @@ def safe_drinking_water():
     ]
     drink_water_df = drink_water_df.loc[:, ~drink_water_df.columns.duplicated()]
 
-    return pd.to_numeric(
-        drink_water_df.rename(columns=COL_MAP)
-        .set_index(["country", "year"])
-        .loc[:, "safely_managed_water_use_rate"]
-        .dropna()
-        .str.replace("<", "")
-        .str.replace(">", ""),
-        errors="coerce",
+    return (
+        pd.to_numeric(
+            drink_water_df.rename(columns=COL_MAP)
+            .set_index(["country", "year"])
+            .loc[:, "safely_managed_water_use_rate"]
+            .dropna()
+            .str.replace("<", "")
+            .str.replace(">", ""),
+            errors="coerce",
+        )
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 

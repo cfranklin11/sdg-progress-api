@@ -81,7 +81,10 @@ def country_budgets():
         .rename(columns=_clean_col_names)
         .reset_index()
         .rename(columns=lambda col: {"Time": "year"}.get(col) or col.lower())
-        .set_index(INDEX_COLS)
+        .set_index(INDEX_COLS + ["code"])
+        .groupby(INDEX_COLS + ["code"])
+        .mean()
+        .reset_index(level=2)
     )
 
 
@@ -110,6 +113,8 @@ def _unicef_data(filepath, value_label):
         .assign(year=lambda df: df["year"].astype(int))
         .set_index(INDEX_COLS)
         .drop(UNUSED_COLS, axis=1)
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -146,6 +151,8 @@ def maternal_mortality():
         .rename(columns=COL_NAME_MAP)
         .drop(UNUSED_COLS, axis=1)
         .set_index(INDEX_COLS)
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -190,6 +197,8 @@ def modern_contraceptive_use_rate():
             )
         )
         .set_index(INDEX_COLS)
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -220,6 +229,8 @@ def adolescent_fertility_rate():
         df.assign(year=years)
         .set_index(INDEX_COLS)
         .loc[:, ["adolescent_fertility_rate"]]
+        .groupby(INDEX_COLS)
+        .mean()
     )
 
 
@@ -238,15 +249,58 @@ def safe_drinking_water():
     ]
     drink_water_df = drink_water_df.loc[:, ~drink_water_df.columns.duplicated()]
 
-    return pd.to_numeric(
-        drink_water_df.rename(columns=COL_MAP)
-        .set_index(["country", "year"])
-        .loc[:, "safely_managed_water_use_rate"]
-        .dropna()
-        .str.replace("<", "")
-        .str.replace(">", ""),
-        errors="coerce",
+    return (
+        pd.to_numeric(
+            drink_water_df.rename(columns=COL_MAP)
+            .set_index(["country", "year"])
+            .loc[:, "safely_managed_water_use_rate"]
+            .dropna()
+            .str.replace("<", "")
+            .str.replace(">", ""),
+            errors="coerce",
+        )
+        .groupby(INDEX_COLS)
+        .mean()
     )
+
+
+def _world_bank_data(filepath, value_name):
+    ID_VARS = ["Country Name", "Country Code", "Indicator Name"]
+    DEFAULT_COL_MAP = {"Country Name": "country", "variable": "year"}
+
+    col_map = {**DEFAULT_COL_MAP, **{"value": value_name}}
+
+    return (
+        pd.read_csv(filepath, header=2)
+        .drop("Indicator Code", axis=1)
+        .melt(id_vars=ID_VARS, value_vars=np.arange(1960, 2019).astype(str))
+        .rename(columns=col_map)
+        .astype({"year": int})
+        .set_index(INDEX_COLS)
+        .loc[:, [value_name]]
+        .groupby("country")
+        .ffill()
+        .groupby("country")
+        .bfill()
+    )
+
+
+def gini_index():
+    FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/country_stats/world_bank/gini_index/API_SI.POV.GINI_DS2_en_csv_v2_247786.csv",
+    )
+
+    return _world_bank_data(FILEPATH, "gini_index")
+
+
+def population():
+    FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/country_stats/world_bank/population/API_SP.POP.TOTL_DS2_en_csv_v2_247892.csv",
+    )
+
+    return _world_bank_data(FILEPATH, "population")
 
 
 def combined():
@@ -254,6 +308,8 @@ def combined():
         country_budgets()
         .join(
             [
+                population(),
+                gini_index(),
                 neonatal_mortality(),
                 u5_mortality(),
                 maternal_mortality(),

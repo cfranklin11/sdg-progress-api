@@ -17,6 +17,9 @@ from src import ml_model
 
 def _clean_col_names(col_name):
     JSON_NAMES_MAP = {
+        "code": "countryCode",
+        "country": "country",
+        "time": "year",
         "environment_protection_budget": "environmentProtectionBudget",
         "general_public_services_budget": "generalPublicServicesBudget",
         "health_budget": "healthBudget",
@@ -27,20 +30,7 @@ def _clean_col_names(col_name):
         "education_budget": "educationBudget",
         "economic_affairs_budget": "economicAffairsBudget",
         "defence_budget": "defenceBudget",
-        "code": "countryCode",
-        "country": "country",
-        "time": "year",
-        "economic_affairs": "economicAffairs",
-        "environment_protection": "environmentProtection",
-        "general_public_services": "generalPublicServices",
-        "housing_and_community_amenities": "housingAndCommunityAmenities",
-        "public_order_and_safety": "publicOrderAndSafety",
-        "recreation_culture_and_religion": "recreationCultureAndReligion",
-        "social_protection": "socialProtection",
-        "social_benefits_and_social_transfers_in_kind": "socialBenefits",
-        "gross_debt": "totalDebt",
         "total_expenditure": "totalBudget",
-        "total_revenue": "totalRevenue",
         "neonatal_mortality_rate": "neonatalMortalityRate",
         "u5_mortality_rate": "u5MortalityRate",
         "maternal_mortality_rate": "maternalMortalityRate",
@@ -52,14 +42,21 @@ def _clean_col_names(col_name):
     return JSON_NAMES_MAP.get(col_name) or col_name
 
 
+def _prepare_response(df):
+    return (
+        df.fillna("")
+        .rename(columns=_clean_col_names)
+        .filter(regex="Budget$|Rate$|^country")
+        .to_dict("records")
+    )
+
+
 def country_data(_request):
     data = (
         countries.load_combined()
         .loc[(slice(None), 2018), :]
         .reset_index()
-        .rename(columns=_clean_col_names)
-        .fillna("")
-        .to_dict("records")
+        .pipe(_prepare_response)
     )
 
     return json.dumps({"data": data})
@@ -93,12 +90,7 @@ def sdg_predictions(request):
     model = ml_model.load_model()
     y_pred = model.predict(X_test)
 
-    predictions = (
-        pd.DataFrame(y_pred, columns=ml_model.LABELS)
-        .fillna("")
-        .rename(columns=_clean_col_names)
-        .to_dict("records")
-    )
+    predictions = pd.DataFrame(y_pred, columns=ml_model.LABELS).pipe(_prepare_response)
 
     return {"data": predictions}
 
@@ -118,4 +110,4 @@ if __name__ == "__main__":
         "social_protection_budget": 5515.92,
     }
 
-    print(sdg_predictions(test_params))
+    print(country_data({}))

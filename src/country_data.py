@@ -264,11 +264,52 @@ def safe_drinking_water():
     )
 
 
+def _world_bank_data(filepath, value_name):
+    ID_VARS = ["Country Name", "Country Code", "Indicator Name"]
+    DEFAULT_COL_MAP = {"Country Name": "country", "variable": "year"}
+
+    col_map = {**DEFAULT_COL_MAP, **{"value": value_name}}
+
+    return (
+        pd.read_csv(filepath, header=2)
+        .drop("Indicator Code", axis=1)
+        .melt(id_vars=ID_VARS, value_vars=np.arange(1960, 2019).astype(str))
+        .rename(columns=col_map)
+        .astype({"year": int})
+        .set_index(INDEX_COLS)
+        .loc[:, [value_name]]
+        .groupby("country")
+        .ffill()
+        .groupby("country")
+        .bfill()
+    )
+
+
+def gini_index():
+    FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/country_stats/world_bank/gini_index/API_SI.POV.GINI_DS2_en_csv_v2_247786.csv",
+    )
+
+    return _world_bank_data(FILEPATH, "gini_index")
+
+
+def population():
+    FILEPATH = os.path.join(
+        BASE_DIR,
+        "data/country_stats/world_bank/population/API_SP.POP.TOTL_DS2_en_csv_v2_247892.csv",
+    )
+
+    return _world_bank_data(FILEPATH, "population")
+
+
 def combined():
     return (
         country_budgets()
         .join(
             [
+                population(),
+                gini_index(),
                 neonatal_mortality(),
                 u5_mortality(),
                 maternal_mortality(),

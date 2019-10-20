@@ -94,7 +94,10 @@ def sdg_predictions(request):
     y_pred = model.predict(X_test)
 
     predictions = (
-        pd.DataFrame(y_pred, columns=ml_model.LABELS).fillna("").to_dict("records")
+        pd.DataFrame(y_pred, columns=ml_model.LABELS)
+        .fillna("")
+        .rename(columns=_clean_col_names)
+        .to_dict("records")
     )
 
     return {"data": predictions}

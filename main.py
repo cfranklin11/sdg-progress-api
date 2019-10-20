@@ -111,17 +111,23 @@ def sdg_predictions(request):
     params = request.get_json()
 
     country = params["country"]  # pylint: disable=unused-variable
+    country_df = countries.load_combined().query("country == @country")
+    country_code = country_df["code"].iloc[0]
 
-    features, _ = ml_model.prepare_data(countries.load_combined())
-    default_data = features.query("country == @country").iloc[-1, :].to_dict()
+    features, _ = ml_model.prepare_data(country_df)
+    default_data = features.sort_values("year").iloc[-1, :].to_dict()
     param_data = {param: params[param] for param in REQUIRED_PARAMS}
 
     X_test = pd.DataFrame([{**default_data, **DEFAULT_PARAMS, **param_data}])
     model = ml_model.load_model()
     y_pred = model.predict(X_test)
 
-    predictions = pd.DataFrame(y_pred, columns=ml_model.LABELS).pipe(_prepare_response)
-    frontend_data = [_reshape_data_for_frontend(datum) for datum in predictions]
+    predictions = pd.DataFrame(y_pred, columns=ml_model.LABELS)
+
+    response_data = predictions.assign(country=country, code=country_code).pipe(
+        _prepare_response
+    )
+    frontend_data = [_reshape_data_for_frontend(datum) for datum in response_data]
 
     return json.dumps({"data": frontend_data})
 

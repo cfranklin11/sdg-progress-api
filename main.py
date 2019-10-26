@@ -15,6 +15,19 @@ from src import country_data as countries
 from src import ml_model
 
 
+def _unauthorized_response():
+    return ("Not authorized", 401)
+
+
+def _request_is_authorized(request) -> bool:
+    auth_token = request.headers.get("Authorization")
+
+    if auth_token == f"Bearer {os.getenv('GCPF_TOKEN')}":
+        return True
+
+    return False
+
+
 def _reshape_data_for_frontend(datum):
     base_data = {
         "country": datum["country"],
@@ -79,7 +92,10 @@ def _prepare_response(df):
     )
 
 
-def country_data(_request):
+def country_data(request):
+    if not _request_is_authorized(request):
+        return _unauthorized_response()
+
     data = (
         countries.load_combined()
         .loc[(slice(None), 2018), :]
@@ -107,6 +123,9 @@ def sdg_predictions(request):
         "recreation_culture_and_religion_budget",
         "social_protection_budget",
     ]
+
+    if not _request_is_authorized(request):
+        return _unauthorized_response()
 
     params = request.get_json()
 

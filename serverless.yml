@@ -9,6 +9,7 @@ provider:
   timeout: "540s"
   environment:
     PYTHON_ENV: production
+    GCPF_TOKEN: ${env:GCPF_TOKEN}
   project: sdg-progress
   # The GCF credentials can be a little tricky to set up. Luckily we've documented this for you here:
   # https://serverless.com/framework/docs/providers/google/guide/credentials/
